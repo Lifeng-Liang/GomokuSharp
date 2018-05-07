@@ -61,10 +61,18 @@ namespace Gomoku
                     return ew.Item2 == player ? 1 : -1;
                 }
                 var maxAction = state.availables[Ext.Rand.Next(state.availables.Count)];
+                //var actionProbs = rollout_policy_fn(state);
+                //var maxAction = actionProbs.Max(p => p.Item2).Item1;
                 state.do_move(maxAction);
             }
             Console.WriteLine("WARNING: rollout reached move limit");
             return 0;
+        }
+
+        private IEnumerable<Tuple<int,double>> rollout_policy_fn(Board board)
+        {
+            var actionProbs = board.availables.Count.NewArray(() => Ext.Rand.NextDouble());
+            return Ext.zip(board.availables, actionProbs);
         }
 
         public int get_move(Board state)

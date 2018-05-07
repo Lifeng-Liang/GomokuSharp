@@ -8,12 +8,12 @@ namespace Gomoku
         public int width;
         public int height;
         public int size;
-        public Dictionary<int, int> states;
+        public int[] states;
         public int n_in_row;
         public int[] players;
         public List<int> availables;
         public List<int> moved;
-        public int press_size;
+        public int moved_size;
         public int current_player;
         public int last_move;
 
@@ -22,8 +22,12 @@ namespace Gomoku
             this.width = width;
             this.height = height;
             this.size = width*height;
-            press_size = 0;
-            this.states = new Dictionary<int, int>();
+            moved_size = 0;
+            this.states = new int[size];
+            for (int i = 0; i < size; i++)
+            {
+                states[i] = -1;
+            }
             this.n_in_row = nInRow;
             this.players = new[] {1, 2};
         }
@@ -41,13 +45,17 @@ namespace Gomoku
             {
                 availables.Add(i);
             }
-            this.states = new Dictionary<int, int>();
+            this.states = new int[size];
+            for (int i = 0; i < size; i++)
+            {
+                states[i] = -1;
+            }
             this.last_move = -1;
         }
 
         public int[] move_to_location(int move)
         {
-            var h = move;
+            var h = move/width;
             var w = move%width;
             return new[] {h, w};
         }
@@ -72,13 +80,19 @@ namespace Gomoku
         public double[,,] current_state()
         {
             var squareState = new double[4, width, height];
-            foreach (var s in states)
+            int count = 0;
+            for (int i = 0; i < size; i++)
             {
-                var index = s.Value == current_player ? 0 : 1;
-                squareState[index, s.Key/width, s.Key%height] = 1.0;
+                var p = states[i];
+                if (p != -1)
+                {
+                    count++;
+                    var index = p == current_player ? 0 : 1;
+                    squareState[index, i / width, i % height] = 1.0;
+                }
             }
             squareState[2, last_move/width, last_move%height] = 1.0;
-            if (states.Count%2 == 0)
+            if (count%2 == 0)
             {
                 for (int y = 0; y < height; y++)
                 {
@@ -97,9 +111,99 @@ namespace Gomoku
             this.states[move] = this.current_player;
             availables.Remove(move);
             moved.Add(move);
-            press_size++;
+            moved_size++;
             this.current_player = current_player == players[1] ? players[0] : players[1];
             this.last_move = move;
+        }
+
+        public Tuple<bool, int> has_a_winner()
+        {
+            if (moved_size < n_in_row + 2)
+            {
+                return Tuple.Create(false, -1);
+            }
+            return Win();
+        }
+
+        private Tuple<bool, int> Win()
+        {
+            var h = last_move/width;
+            var w = last_move%width;
+            var p = current_player == players[1] ? players[0] : players[1];
+            if (check2(last_move - w, last_move + width - w - 1, 1, p))
+            {
+                return Tuple.Create(true, p);
+            }
+            if (check2(last_move - h*width, size - 1, width, p))
+            {
+                return Tuple.Create(true, p);
+            }
+            var x = Math.Min(h, w);
+            var y = width - w - 1;
+            if (check2(last_move - x*width - x, Math.Min(size - 1, last_move + y*width + y), width + 1, p))
+            {
+                return Tuple.Create(true, p);
+            }
+            x = Math.Min(h, width - w - 1);
+            if (check2(last_move - x*width + x, Math.Min(size - 1, last_move + w*width - w), width - 1, p))
+            {
+                return Tuple.Create(true, p);
+            }
+            return Tuple.Create(false, -1);
+        }
+
+        private bool check2(int start, int end, int step, int player)
+        {
+            int count = 0;
+            for (int i = start; i <= end; i+=step)
+            {
+                if (states[i] == player)
+                {
+                    count++;
+                    if (count >= n_in_row)
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    count = 0;
+                }
+            }
+            return false;
+        }
+
+        private Tuple<bool, int> HasAWinner()
+        {
+            var n = n_in_row;
+            foreach (int m in moved)
+            {
+                var h = m/width;
+                var w = m%width;
+                var player = states[m];
+                var maxw = width - n + 1;
+                var maxh = height - n + 1;
+                if (w >= 0 && w < maxw && check(m, m + n))
+                {
+                    return Tuple.Create(true, player);
+                }
+
+                if (h >= 0 && h < maxh && check(m, m + n*width, width))
+                {
+                    return Tuple.Create(true, player);
+                }
+
+                if (w >= 0 && w < maxw && h >= 0 && h < maxh && check(m, m + n*(width + 1), width + 1))
+                {
+                    return Tuple.Create(true, player);
+                }
+
+                if (w >= n - 1 && w < width && h >= 0 && h < maxh && check(m, m + n*(width - 1), width - 1))
+                {
+                    return Tuple.Create(true, player);
+                }
+            }
+            return Tuple.Create(false, -1);
         }
 
         private bool check(int m, int n, int step = 1)
@@ -107,8 +211,8 @@ namespace Gomoku
             int len1 = 0, len2 = 0, empty = 0;
             for (int i = m; i < n; i += step)
             {
-                int player;
-                if (states.TryGetValue(i, out player))
+                int player = states[i];
+                if (player != -1)
                 {
                     if (player == players[0])
                     {
@@ -127,44 +231,6 @@ namespace Gomoku
             return len1 + len2 + empty == 1;
         }
 
-        public Tuple<bool, int> has_a_winner()
-        {
-            var n = n_in_row;
-
-            if (press_size < n_in_row + 2)
-            {
-                return Tuple.Create(false, -1);
-            }
-            foreach (int m in moved)
-            {
-                var h = m / width;
-                var w = m % width;
-                var player = states[m];
-                var maxw = width - n + 1;
-                var maxh = height - n + 1;
-                if (w >= 0 && w < maxw && check(m, m + n))
-                {
-                    return Tuple.Create(true, player);
-                }
-
-                if (h >= 0 && h < maxh && check(m, m + n * width, width))
-                {
-                    return Tuple.Create(true, player);
-                }
-
-                if (w >= 0 && w < maxw && h >= 0 && h < maxh && check(m, m + n * (width + 1), width + 1))
-                {
-                    return Tuple.Create(true, player);
-                }
-
-                if (w >= n - 1 && w < width && h >= 0 && h < maxh && check(m, m + n * (width - 1), width - 1))
-                {
-                    return Tuple.Create(true, player);
-                }
-            }
-            return Tuple.Create(false, -1);
-        }
-
         public Tuple<bool, int> game_end()
         {
             var tp = has_a_winner();
@@ -172,7 +238,7 @@ namespace Gomoku
             {
                 return Tuple.Create(true, tp.Item2);
             }
-            if (press_size == size)
+            if (moved_size == size)
             {
                 return Tuple.Create(true, -1);
             }
@@ -188,7 +254,7 @@ namespace Gomoku
         {
             var b = new Board(width, height, n_in_row)
             {
-                press_size = press_size,
+                moved_size = moved_size,
                 current_player = current_player,
                 last_move = last_move,
                 availables = new List<int>(),
@@ -202,9 +268,9 @@ namespace Gomoku
             {
                 b.availables.Add(i);
             }
-            foreach (var state in states)
+            for (int i = 0; i < size; i++)
             {
-                b.states[state.Key] = state.Value;
+                b.states[i] = states[i];
             }
             return b;
         }

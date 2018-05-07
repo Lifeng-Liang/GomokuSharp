@@ -32,7 +32,7 @@ namespace Gomoku
                 for (int j = 0; j < width; j++)
                 {
                     var loc = i * width + j;
-                    var p = board.states.Get(loc, -1);
+                    var p = board.states[loc];
                     if (p == player1)
                     {
                         Console.Write("\tX");

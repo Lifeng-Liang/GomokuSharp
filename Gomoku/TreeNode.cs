@@ -33,17 +33,17 @@ namespace Gomoku
             }
         }
 
-        public KeyValuePair<int, TreeNode> select(int c_puct)
+        public KeyValuePair<int, TreeNode> select(int cPuct)
         {
-            return _children.Max(n => n.Value.get_value(c_puct));
+            return _children.Max(n => n.Value.get_value(cPuct));
         }
 
-        public void update(double leaf_value)
+        public void update(double leafValue)
         {
             // Count visit.
             _n_visits += 1;
             // Update Q, a running average of values for all visits.
-            _Q += 1.0*(leaf_value - _Q)/_n_visits;
+            _Q += 1.0*(leafValue - _Q)/_n_visits;
         }
 
         public void update_recursive(double leafValue)
@@ -53,9 +53,9 @@ namespace Gomoku
             update(leafValue);
         }
 
-        public double get_value(int c_puct)
+        public double get_value(int cPuct)
         {
-            _u = c_puct * _P * Math.Sqrt(_parent._n_visits)/(1 + _n_visits);
+            _u = cPuct * _P * Math.Sqrt(_parent._n_visits)/(1 + _n_visits);
             return _Q + _u;
         }
 
