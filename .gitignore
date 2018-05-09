@@ -1,3 +1,7 @@
 /Gomoku/bin
 /Gomoku/obj
 /.vs
+/GomokuLib/bin
+/GomokuLib/obj
+/PbrainMcts/bin
+/PbrainMcts/obj

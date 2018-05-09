@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gomoku", "Gomoku\Gomoku.csproj", "{6C3CDC2C-2E5C-4002-AD3F-D888A39E3BD6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GomokuLib", "GomokuLib\GomokuLib.csproj", "{95EF5786-757E-43FD-84DB-791D579255E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PbrainMcts", "PbrainMcts\PbrainMcts.csproj", "{CCF16A57-4FE9-44CB-94ED-5A88722C052A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{6C3CDC2C-2E5C-4002-AD3F-D888A39E3BD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C3CDC2C-2E5C-4002-AD3F-D888A39E3BD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6C3CDC2C-2E5C-4002-AD3F-D888A39E3BD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95EF5786-757E-43FD-84DB-791D579255E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95EF5786-757E-43FD-84DB-791D579255E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95EF5786-757E-43FD-84DB-791D579255E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95EF5786-757E-43FD-84DB-791D579255E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCF16A57-4FE9-44CB-94ED-5A88722C052A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCF16A57-4FE9-44CB-94ED-5A88722C052A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCF16A57-4FE9-44CB-94ED-5A88722C052A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCF16A57-4FE9-44CB-94ED-5A88722C052A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

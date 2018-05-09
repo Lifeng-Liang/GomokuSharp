@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using GomokuLib;
 
 namespace Gomoku
 {
@@ -21,7 +23,7 @@ namespace Gomoku
             Console.WriteLine($"Player {player2} with O");
             Console.WriteLine();
             Console.Write("\t");
-            for (int x=0; x<width; x++)
+            for (int x = 0; x < width; x++)
             {
                 Console.Write($"\t{x}");
             }
@@ -31,7 +33,7 @@ namespace Gomoku
                 Console.Write($"\t{i}");
                 for (int j = 0; j < width; j++)
                 {
-                    var loc = i * width + j;
+                    var loc = i*width + j;
                     var p = board.states[loc];
                     if (p == player1)
                     {
@@ -70,7 +72,11 @@ namespace Gomoku
             {
                 var currentPlayer = board.get_current_player();
                 var playerInTurn = players[currentPlayer];
+                var timer = new Stopwatch();
+                timer.Start();
                 var move = playerInTurn.get_action(board);
+                timer.Stop();
+                Console.WriteLine($"{playerInTurn} Elapsed : {timer.Elapsed}");
                 board.do_move(move.Item1);
                 if (isShown)
                 {
@@ -95,15 +101,16 @@ namespace Gomoku
             }
         }
 
-        public Tuple<int, List<object[]>> start_self_play(Player player, bool isShown= false, double temp= 0.001)
+        public Tuple<int, List<Tuple<double[,,], object, double>>> start_self_play(Player player, bool isShown = false, double temp = 0.001)
         {
             board.init_board();
             var p1 = board.players[0];
-		    var p2 = board.players[1];
+            var p2 = board.players[1];
             var states = new List<double[,,]>();
             var mctsProbs = new List<object>();
             var currentPlayers = new List<int>();
-            while(true) {
+            while (true)
+            {
                 var mp = player.get_action(board, temp, true);
                 // store the data
                 states.Add(board.current_state());
@@ -111,32 +118,38 @@ namespace Gomoku
                 currentPlayers.Add(board.current_player);
                 // perform a move
                 board.do_move(mp.Item1);
-                if(isShown) {
+                if (isShown)
+                {
                     graphic(board, p1, p2);
-			    }
+                }
                 var ew = board.game_end();
-                if(ew.Item1) {
+                if (ew.Item1)
+                {
                     // winner from the perspective of the current player of each state
                     var winnersZ = new double[currentPlayers.Count];
-                    if(ew.Item2 != -1) {
+                    if (ew.Item2 != -1)
+                    {
                         for (int i = 0; i < winnersZ.Length; i++)
                         {
                             winnersZ[i] = currentPlayers[i] == ew.Item2 ? 1.0 : -1.0;
                         }
-				    }
+                    }
                     // reset MCTS root node
                     player.reset_player();
-                    if (isShown) {
-                        if(ew.Item2 != -1) {
+                    if (isShown)
+                    {
+                        if (ew.Item2 != -1)
+                        {
                             Console.WriteLine($"Game end. Winner is player: {ew.Item2}");
-					    }
-                        else {
+                        }
+                        else
+                        {
                             Console.WriteLine("Game end. Tie");
-					    }
-				    }
-                    return Tuple.Create(ew.Item2, Ext.zip(states, mctsProbs, winnersZ));
+                        }
+                    }
+                    return Tuple.Create(ew.Item2, Ext.zip(states, mctsProbs, winnersZ).ToList());
                 }
-		    }
+            }
         }
     }
 }

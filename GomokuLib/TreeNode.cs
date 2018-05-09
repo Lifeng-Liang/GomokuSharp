@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public class TreeNode
     {

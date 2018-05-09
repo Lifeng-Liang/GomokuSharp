@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Gomoku
+namespace GomokuLib
 {
-    public class MCTS
+    public class Mcts
     {
-        private TreeNode _root;
-        private Func<Board, Tuple<IEnumerable<Tuple<int, double>>, int>> _policy;
-        private int _c_puct;
-        private int _n_playout;
+        protected TreeNode _root;
+        protected Func<Board, Tuple<IEnumerable<Tuple<int, double>>, double>> _policy;
+        protected int _c_puct;
+        protected int _n_playout;
 
-        public MCTS(Func<Board, Tuple<IEnumerable<Tuple<int, double>>, int>> policyValueFn, int cPuct = 5, int nPlayout = 10000)
+        public Mcts(Func<Board, Tuple<IEnumerable<Tuple<int, double>>, double>> policyValueFn, int cPuct = 5, int nPlayout = 10000)
         {
             _root = new TreeNode(null, 1.0);
             _policy = policyValueFn;
@@ -18,7 +18,7 @@ namespace Gomoku
             _n_playout = nPlayout;
         }
 
-        private void _playout(Board state)
+        protected void _playout(Board state)
         {
             var node = _root;
             while (true)
@@ -33,6 +33,13 @@ namespace Gomoku
                 state.do_move(kv.Key);
             }
 
+            var leafValue = Evaluate(state, node);
+            // Update value and visit count of nodes in this traversal.
+            node.update_recursive(-leafValue);
+        }
+
+        protected virtual double Evaluate(Board state, TreeNode node)
+        {
             var actionProbs = _policy(state).Item1;
             // Check for end of game
             var end = state.game_end().Item1;
@@ -42,8 +49,7 @@ namespace Gomoku
             }
             // Evaluate the leaf node by random rollout
             var leafValue = _evaluate_rollout(state);
-            // Update value and visit count of nodes in this traversal.
-            node.update_recursive(-leafValue);
+            return leafValue;
         }
 
         private int _evaluate_rollout(Board state, int limit = 1000)
@@ -69,7 +75,7 @@ namespace Gomoku
             return 0;
         }
 
-        private IEnumerable<Tuple<int,double>> rollout_policy_fn(Board board)
+        private IEnumerable<Tuple<int, double>> rollout_policy_fn(Board board)
         {
             var actionProbs = board.availables.Count.NewArray(() => Ext.Rand.NextDouble());
             return Ext.zip(board.availables, actionProbs);
@@ -77,7 +83,7 @@ namespace Gomoku
 
         public int get_move(Board state)
         {
-            for (var n=0; n<_n_playout; n++)
+            for (var n = 0; n < _n_playout; n++)
             {
                 var stateCopy = state.DeepCopy();
                 _playout(stateCopy);

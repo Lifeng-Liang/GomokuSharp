@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public static class Ext
     {
@@ -18,7 +18,7 @@ namespace Gomoku
             return defaultValue;
         }
 
-        public static IEnumerable<Tuple<T1,T2>> zip<T1,T2>(IList<T1> list1, T2[]list2)
+        public static IEnumerable<Tuple<T1,T2>> zip<T1,T2>(IList<T1> list1, T2[] list2)
         {
             var min = Math.Min(list1.Count, list2.Length);
             for (int i = 0; i < min; i++)
@@ -27,27 +27,13 @@ namespace Gomoku
             }
         }
 
-        public static List<object[]> zip(params IList[] lists)
+        public static IEnumerable<Tuple<T1, T2, T3>> zip<T1, T2, T3>(IList<T1> list1, IList<T2> list2, T3[] list3)
         {
-            var min = int.MaxValue;
-            foreach (var list in lists)
-            {
-                if (list.Count < min)
-                {
-                    min = list.Count;
-                }
-            }
-            var result = new List<object[]>();
+            var min = Math.Min(Math.Min(list1.Count, list2.Count), list3.Length);
             for (int i = 0; i < min; i++)
             {
-                var item = new object[lists.Length];
-                for (int j = 0; j < lists.Length; j++)
-                {
-                    item[j] = lists[i][j];
-                }
-                result.Add(item);
+                yield return Tuple.Create(list1[i], list2[i], list3[i]);
             }
-            return result;
         }
 
         public static T[] NewArray<T>(this int n, Func<T> genItem)
@@ -84,6 +70,23 @@ namespace Gomoku
                 }
             }
             return kv;
+        }
+
+        public static T choice<T>(List<T> list, IEnumerable<double> p)
+        {
+            int index = 0;
+            var x = Rand.NextDouble();
+            foreach (var d in p)
+            {
+                var y = x - d;
+                if (y < 0)
+                {
+                    break;
+                }
+                x = y;
+                index++;
+            }
+            return list[index];
         }
 
         #region FP

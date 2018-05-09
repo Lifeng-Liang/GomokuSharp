@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public class Board
     {
@@ -12,7 +12,6 @@ namespace Gomoku
         public int n_in_row;
         public int[] players;
         public List<int> availables;
-        public List<int> moved;
         public int moved_size;
         public int current_player;
         public int last_move;
@@ -32,14 +31,13 @@ namespace Gomoku
             this.players = new[] {1, 2};
         }
 
-        public void init_board(int startPlayer = 0)
+        public virtual void init_board(int startPlayer = 0)
         {
             if (this.width < this.n_in_row || this.height < this.n_in_row)
             {
                 throw new Exception($"board width and height can not be less than {n_in_row}");
             }
             this.current_player = this.players[startPlayer];
-            moved = new List<int>();
             this.availables = new List<int>();
             for (int i = 0; i < size; i++)
             {
@@ -106,11 +104,10 @@ namespace Gomoku
             return squareState;
         }
 
-        public void do_move(int move)
+        public virtual void do_move(int move)
         {
             this.states[move] = this.current_player;
             availables.Remove(move);
-            moved.Add(move);
             moved_size++;
             this.current_player = current_player == players[1] ? players[0] : players[1];
             this.last_move = move;
@@ -125,34 +122,34 @@ namespace Gomoku
             return Win();
         }
 
-        private Tuple<bool, int> Win()
+        protected virtual Tuple<bool, int> Win()
         {
             var h = last_move/width;
             var w = last_move%width;
             var p = current_player == players[1] ? players[0] : players[1];
-            if (check2(last_move - w, last_move + width - w - 1, 1, p))
+            if (check(last_move - w, last_move + width - w - 1, 1, p))
             {
                 return Tuple.Create(true, p);
             }
-            if (check2(last_move - h*width, size - 1, width, p))
+            if (check(last_move - h*width, size - 1, width, p))
             {
                 return Tuple.Create(true, p);
             }
             var x = Math.Min(h, w);
             var y = width - w - 1;
-            if (check2(last_move - x*width - x, Math.Min(size - 1, last_move + y*width + y), width + 1, p))
+            if (check(last_move - x*width - x, Math.Min(size - 1, last_move + y*width + y), width + 1, p))
             {
                 return Tuple.Create(true, p);
             }
             x = Math.Min(h, width - w - 1);
-            if (check2(last_move - x*width + x, Math.Min(size - 1, last_move + w*width - w), width - 1, p))
+            if (check(last_move - x*width + x, Math.Min(size - 1, last_move + w*width - w), width - 1, p))
             {
                 return Tuple.Create(true, p);
             }
             return Tuple.Create(false, -1);
         }
 
-        private bool check2(int start, int end, int step, int player)
+        private bool check(int start, int end, int step, int player)
         {
             int count = 0;
             for (int i = start; i <= end; i+=step)
@@ -173,13 +170,75 @@ namespace Gomoku
             return false;
         }
 
-        private Tuple<bool, int> HasAWinner()
+        public Tuple<bool, int> game_end()
+        {
+            var tp = has_a_winner();
+            if (tp.Item1)
+            {
+                return Tuple.Create(true, tp.Item2);
+            }
+            if (moved_size == size)
+            {
+                return Tuple.Create(true, -1);
+            }
+            return Tuple.Create(false, -1);
+        }
+
+        public int get_current_player()
+        {
+            return current_player;
+        }
+
+        public virtual Board DeepCopy()
+        {
+            var b = new Board(width, height, n_in_row)
+            {
+                moved_size = moved_size,
+                current_player = current_player,
+                last_move = last_move,
+                availables = new List<int>(),
+            };
+            foreach (var i in availables)
+            {
+                b.availables.Add(i);
+            }
+            for (int i = 0; i < size; i++)
+            {
+                b.states[i] = states[i];
+            }
+            return b;
+        }
+    }
+
+    public class OldBoard : Board
+    {
+        public List<int> moved;
+
+        public OldBoard(int width = 8, int height = 8, int nInRow = 5)
+            : base(width, height, nInRow)
+        {
+            moved = new List<int>();
+        }
+
+        public override void init_board(int startPlayer = 0)
+        {
+            base.init_board(startPlayer);
+            moved = new List<int>();
+        }
+
+        public override void do_move(int move)
+        {
+            base.do_move(move);
+            moved.Add(move);
+        }
+
+        protected override Tuple<bool, int> Win()
         {
             var n = n_in_row;
             foreach (int m in moved)
             {
-                var h = m/width;
-                var w = m%width;
+                var h = m / width;
+                var w = m % width;
                 var player = states[m];
                 var maxw = width - n + 1;
                 var maxh = height - n + 1;
@@ -188,17 +247,17 @@ namespace Gomoku
                     return Tuple.Create(true, player);
                 }
 
-                if (h >= 0 && h < maxh && check(m, m + n*width, width))
+                if (h >= 0 && h < maxh && check(m, m + n * width, width))
                 {
                     return Tuple.Create(true, player);
                 }
 
-                if (w >= 0 && w < maxw && h >= 0 && h < maxh && check(m, m + n*(width + 1), width + 1))
+                if (w >= 0 && w < maxw && h >= 0 && h < maxh && check(m, m + n * (width + 1), width + 1))
                 {
                     return Tuple.Create(true, player);
                 }
 
-                if (w >= n - 1 && w < width && h >= 0 && h < maxh && check(m, m + n*(width - 1), width - 1))
+                if (w >= n - 1 && w < width && h >= 0 && h < maxh && check(m, m + n * (width - 1), width - 1))
                 {
                     return Tuple.Create(true, player);
                 }
@@ -231,28 +290,9 @@ namespace Gomoku
             return len1 + len2 + empty == 1;
         }
 
-        public Tuple<bool, int> game_end()
+        public override Board DeepCopy()
         {
-            var tp = has_a_winner();
-            if (tp.Item1)
-            {
-                return Tuple.Create(true, tp.Item2);
-            }
-            if (moved_size == size)
-            {
-                return Tuple.Create(true, -1);
-            }
-            return Tuple.Create(false, -1);
-        }
-
-        public int get_current_player()
-        {
-            return current_player;
-        }
-
-        public Board DeepCopy()
-        {
-            var b = new Board(width, height, n_in_row)
+            var b = new OldBoard(width, height, n_in_row)
             {
                 moved_size = moved_size,
                 current_player = current_player,

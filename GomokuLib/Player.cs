@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public abstract class Player
     {
@@ -11,7 +11,7 @@ namespace Gomoku
             player = p;
         }
 
-        public abstract Tuple<int, object> get_action(Board board, double temp= 0.001, bool returnProb= false);
+        public abstract Tuple<int, double[]> get_action(Board board, double temp= 0.001, bool returnProb= false);
 
         public abstract void reset_player();
     }

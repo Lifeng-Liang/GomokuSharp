@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public class HumanPlayer : Player
     {
-        public override Tuple<int, object> get_action(Board board, double temp = 0.001, bool returnProb = false)
+        public override Tuple<int, double[]> get_action(Board board, double temp = 0.001, bool returnProb = false)
         {
             int move;
             try
@@ -24,7 +24,7 @@ namespace Gomoku
                 Console.WriteLine("invalid move");
                 move = get_action(board).Item1;
             }
-            return Tuple.Create<int, object>(move, null);
+            return Tuple.Create<int, double[]>(move, null);
         }
 
         public override void reset_player()
