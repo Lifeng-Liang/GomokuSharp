@@ -89,6 +89,187 @@ namespace GomokuLib
             return list[index];
         }
 
+        public static IEnumerable<T> sample<T>(this List<T> population, int k)
+        {
+            for (int i = 0; i < k; i++)
+            {
+                var n = Rand.Next(population.Count);
+                T item = population[n];
+                population.RemoveAt(n);
+                yield return item;
+            }
+        }
+
+        public static double[,,] rot90(this double[,,] state, int n)
+        {
+            //TODO:
+            return state;
+        }
+
+        public static double[,] rot90(this double[,] state, int n)
+        {
+            //TODO:
+            return state;
+        }
+
+        public static double[,,] fliplr(this double[,,] state)
+        {
+            //TODO:
+            return state;
+        }
+
+        public static double[,] fliplr(this double[,] state)
+        {
+            var xx = state.GetLength(0);
+            var yy = state.GetLength(1);
+            var result = new double[xx, yy];
+            for (int y = 0; y < yy; y++)
+            {
+                for (int x = 0; x < xx; x++)
+                {
+                    var tx = xx - x - 1;
+                    result[tx, y] = state[x, y];
+                }
+            }
+            return result;
+        }
+
+        public static double[,,] flipud(this double[,,] state)
+        {
+            //TODO:
+            return state;
+        }
+
+        public static double[,] flipud(this double[,] state)
+        {
+            var xx = state.GetLength(0);
+            var yy = state.GetLength(1);
+            var result = new double[xx, yy];
+            for (int y = 0; y < yy; y++)
+            {
+                var ty = yy - y - 1;
+                for (int x = 0; x < xx; x++)
+                {
+                    result[x, ty] = state[x, y];
+                }
+            }
+            return result;
+        }
+
+        public static IEnumerable<double> flatten(this IList<IList<double>> state)
+        {
+            foreach (var yy in state)
+            {
+                foreach (var item in yy)
+                {
+                    yield return item;
+                }
+            }
+        }
+
+        public static IEnumerable<double> flatten(this double[,,] state)
+        {
+            foreach (var d in state)
+            {
+                yield return d;
+            }
+        }
+
+        public static IEnumerable<double> flatten(this double[,] state)
+        {
+            foreach (var d in state)
+            {
+                yield return d;
+            }
+        }
+
+        public static double[] flatten(this double[] state)
+        {
+            return state;
+        }
+
+        public static double[,] reshape(this double[] state, int w1, int w2)
+        {
+            if (w1*w2 != state.Length)
+            {
+                throw new Exception();
+            }
+            double[,] result = new double[w1, w2];
+            int i = 0;
+            for (int y = 0; y < w2; y++)
+            {
+                for (int x = 0; x < w1; x++)
+                {
+                    result[x, y] = state[i];
+                    i++;
+                }
+            }
+            return result;
+        }
+
+        public static double variance(this IEnumerable<double> state)
+        {
+            int n = 0;
+            double sum = 0;
+            foreach (var s in state)
+            {
+                sum += s;
+                n++;
+            }
+            double avg = sum/n;
+            double v = 0.0;
+            foreach (var s in state)
+            {
+                var d = s - avg;
+                v += d*d;
+            }
+            return v / n;
+        }
+
+        public static IEnumerable<double> sub(this double[] first, double[] secend)
+        {
+            if (first.Length != secend.Length)
+            {
+                throw new Exception();
+            }
+            for (int i = 0; i < first.Length; i++)
+            {
+                yield return first[i] - secend[i];
+            }
+        }
+
+        public static double mean(this IEnumerable<double> state)
+        {
+            int n = 0;
+            double sum = 0;
+            foreach (var s in state)
+            {
+                sum += s;
+                n++;
+            }
+            return sum / n;
+        }
+
+        public static double[] sum(this double[,] state, int axis)
+        {
+            return null;
+        }
+
+        public static IList<IList<double>> exp(this IList<IList<double>> state)
+        {
+            var yy = state.Count;
+            for (int y = 0; y < yy; y++)
+            {
+                var list = state[y];
+                var xx = list.Count;
+                for (int x = 0; x < xx; x++)
+                {
+                    list[x] = Math.Exp(list[x]);
+                }
+            }
+            return state;
+        }
+
         #region FP
 
         public static IEnumerable<int> To(this int start, int end, int step = 1)
@@ -233,11 +414,6 @@ namespace GomokuLib
                 }
             }
             return false;
-        }
-
-        public static List<T> ToList<T>(this IEnumerable<T> list)
-        {
-            return new List<T>(list);
         }
 
         #endregion

@@ -41,11 +41,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Board.cs" />
+    <Compile Include="Game.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="HumanPlayer.cs" />
     <Compile Include="Mcts.cs" />
     <Compile Include="MctsPlayer.cs" />
     <Compile Include="Player.cs" />
+    <Compile Include="PolicyValueNet.cs" />
     <Compile Include="TreeNode.cs" />
     <Compile Include="ZeroMcts.cs" />
     <Compile Include="ZeroPlayer.cs" />

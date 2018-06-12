@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using GomokuLib;
+using System.Linq;
 
-namespace Gomoku
+namespace GomokuLib
 {
     public class Game
     {
@@ -34,7 +34,7 @@ namespace Gomoku
                 for (int j = 0; j < width; j++)
                 {
                     var loc = i*width + j;
-                    var p = board.states[loc];
+                    var p = board.GetState(loc);
                     if (p == player1)
                     {
                         Console.Write("\tX");
@@ -101,13 +101,13 @@ namespace Gomoku
             }
         }
 
-        public Tuple<int, List<Tuple<double[,,], object, double>>> start_self_play(Player player, bool isShown = false, double temp = 0.001)
+        public Tuple<int, List<Tuple<double[,,], double[], double>>> start_self_play(Player player, bool isShown = false, double temp = 0.001)
         {
             board.init_board();
             var p1 = board.players[0];
             var p2 = board.players[1];
             var states = new List<double[,,]>();
-            var mctsProbs = new List<object>();
+            var mctsProbs = new List<double[]>();
             var currentPlayers = new List<int>();
             while (true)
             {

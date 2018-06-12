@@ -5,10 +5,10 @@ namespace GomokuLib
 {
     public class Board
     {
-        public int width;
-        public int height;
-        public int size;
-        public int[] states;
+        public readonly int width;
+        public readonly int height;
+        public readonly int size;
+        protected int[] states;
         public int n_in_row;
         public int[] players;
         public List<int> availables;
@@ -23,10 +23,6 @@ namespace GomokuLib
             this.size = width*height;
             moved_size = 0;
             this.states = new int[size];
-            for (int i = 0; i < size; i++)
-            {
-                states[i] = -1;
-            }
             this.n_in_row = nInRow;
             this.players = new[] {1, 2};
         }
@@ -44,11 +40,12 @@ namespace GomokuLib
                 availables.Add(i);
             }
             this.states = new int[size];
-            for (int i = 0; i < size; i++)
-            {
-                states[i] = -1;
-            }
             this.last_move = -1;
+        }
+
+        public int GetState(int move)
+        {
+            return states[move];
         }
 
         public int[] move_to_location(int move)
@@ -82,7 +79,7 @@ namespace GomokuLib
             for (int i = 0; i < size; i++)
             {
                 var p = states[i];
-                if (p != -1)
+                if (p != 0)
                 {
                     count++;
                     var index = p == current_player ? 0 : 1;

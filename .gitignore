@@ -5,3 +5,7 @@
 /GomokuLib/obj
 /PbrainMcts/bin
 /PbrainMcts/obj
+/Gomoku/*.user
+/ZeroTrain/bin
+/ZeroTrain/obj
+/packages
