@@ -10,7 +10,7 @@ namespace ZeroTrain
     {
         static void Main(string[] args)
         {
-            var t = new TrainPipeline(12, 5);
+            var t = new TrainPipeline(15, 5);
             t.Run();
         }
     }

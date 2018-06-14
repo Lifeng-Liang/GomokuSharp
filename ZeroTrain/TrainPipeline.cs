@@ -43,7 +43,7 @@ namespace ZeroTrain
             this.learn_rate = 2e-3;
             this.lr_multiplier = 1.0;  // adaptively adjust the learning rate based on KL
             this.temp = 1.0;  // the temperature param
-            this.n_playout = 400;  // num of simulations for each move
+            this.n_playout = 10000;  // num of simulations for each move
             this.c_puct = 5;
             this.buffer_size = 10000;
             this.batch_size = 512;  // mini-batch size for training
@@ -70,7 +70,7 @@ namespace ZeroTrain
                     this.collect_selfplay_data(play_batch_size);
                     Console.Write($"epoch:{i+1}, epi_len:{episode_len}, ");
                     if(data_buffer.Count > batch_size) {
-                        var loss__entropy = this.policy_update();
+                        this.policy_update();
                     }
                     if ((i + 1) % this.check_freq == 0)
                     {
@@ -126,7 +126,7 @@ namespace ZeroTrain
             return extendData;
         }
 
-        private Tuple<double, double> policy_update()
+        private void policy_update()
         {
             var miniBatch = data_buffer.sample(batch_size).ToList();
             var stateBatch = miniBatch.Map(p => p.Item1).ToList();
@@ -167,7 +167,6 @@ namespace ZeroTrain
             var tdura = timer.Elapsed;
             timer.Restart();
             Console.WriteLine($"kl:{kl}, lr_mp:{lr_multiplier}, loss:{loss}, entropy:{entropy}, var_old:{explainedVarOld}, var_new:{explainedVarNew}, dura:{tdura}");
-            return Tuple.Create(loss, entropy);
         }
 
         private double ProbsMean(IList<IList<double>> oldProbs, IList<IList<double>> newProbs)

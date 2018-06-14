@@ -6,14 +6,78 @@ namespace ZeroTrain
 {
     public static class CntkExt
     {
-        public static IList<IList<double>> Train(this Function model, Value input)
+        public static List<IList<IList<double>>> Evaluate(this Function model, Value input)
         {
             var imageInput = model.Arguments[0];
             var labelOutput = model.Output;
             var inputDataMap = new Dictionary<Variable, Value> {{imageInput, input}};
-            var outputDataMap = new Dictionary<Variable, Value> {{labelOutput, null}};
+            var outputDataMap = new Dictionary<Variable, Value>();
+            foreach (var output in model.Outputs)
+            {
+                outputDataMap.Add(output, null);
+            }
             model.Evaluate(inputDataMap, outputDataMap, nn.Device);
-            return outputDataMap[labelOutput].GetDenseData<double>(labelOutput);
+            var result = new List<IList<IList<double>>>();
+            foreach (var output in model.Outputs)
+            {
+                result.Add(outputDataMap[output].GetDenseData<double>(output));
+            }
+            return result;
+        }
+    }
+
+    public class LossFunction
+    {
+        private readonly Function _func;
+
+        public LossFunction(Function func)
+        {
+            _func = func;
+        }
+
+        public static Function operator +(LossFunction op1, LossFunction op2)
+        {
+            return CNTKLib.Plus(op1._func, op2._func);
+        }
+
+        public static implicit operator LossFunction(Function op)
+        {
+            return new LossFunction(op);
+        }
+
+        public static implicit operator Function(LossFunction op)
+        {
+            return op._func;
+        }
+    }
+
+    public class InputVariable
+    {
+        private readonly Variable _variable;
+
+        public InputVariable(Variable variable)
+        {
+            _variable = variable;
+        }
+
+        public static Function operator *(InputVariable op1, InputVariable op2)
+        {
+            return CNTKLib.ElementTimes(op1._variable, op2._variable);
+        }
+
+        public static Function operator *(InputVariable op1, float op2)
+        {
+            return CNTKLib.ElementTimes(op1._variable, Constant.Scalar(op2, nn.Device));
+        }
+
+        public static implicit operator InputVariable(Variable op)
+        {
+            return new InputVariable(op);
+        }
+
+        public static implicit operator Variable(InputVariable variable)
+        {
+            return variable._variable;
         }
     }
 
@@ -149,6 +213,39 @@ namespace ZeroTrain
                 var n = Constant.Scalar(0.0f, Device);
                 return CNTKLib.BatchNormalization(input, sc, b, m, v, n, spatial);
             };
+        }
+
+        public static LossFunction CrossEntropyLoss(Variable prediction, Variable labels)
+        {
+            return CNTKLib.CrossEntropyWithSoftmax(prediction, labels);
+        }
+
+        public static LossFunction MSELoss(Variable prediction, Variable labels)
+        {
+            return CNTKLib.SquaredError(prediction, labels);
+        }
+
+        public static LossFunction ClassificationError(Variable prediction, Variable labels)
+        {
+            return CNTKLib.ClassificationError(prediction, labels);
+        }
+
+        public static InputVariable InputVariable(NDShape shape, string name)
+        {
+            return CNTKLib.InputVariable(shape, Type, name);
+        }
+
+        public static Function Combine(params Variable[] funcs)
+        {
+            if (funcs.Length == 0)
+            {
+                return null;
+            }
+            if (funcs.Length == 1)
+            {
+                return funcs[0];
+            }
+            return Function.Combine(funcs);
         }
     }
 }

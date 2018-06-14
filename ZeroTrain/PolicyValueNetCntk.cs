@@ -10,29 +10,37 @@ namespace ZeroTrain
     public class PolicyValueNetCntk : PolicyValueNet
     {
         public static readonly string BasePath = Path.GetTempPath();
-        private static readonly Variable Inputs = CNTKLib.InputVariable(new[] { 15, 15, 4 }, nn.Type, "features");
-        private static readonly Variable Labels = CNTKLib.InputVariable(new[] { 15 * 15 }, nn.Type, "labels");
-        private static readonly Variable Values = CNTKLib.InputVariable(new[] { 1 }, nn.Type, "values");
+        private const string Nfeatures = "features";
+        private const string Nlabels = "labels";
+        private const string Nvalues = "values";
+        private readonly InputVariable _inputs;
+        private readonly InputVariable _labels;
+        private readonly InputVariable _values;
         private readonly int _width;
         private readonly int _height;
         private readonly Function _model;
         private readonly Trainer _trainer;
+        private readonly Learner _optim;
 
         public PolicyValueNetCntk(int width, int height) : base(width, height)
         {
             _width = width;
             _height = height;
-            var scaledInput = CNTKLib.ElementTimes(Constant.Scalar(0.00000390625f, nn.Device), Inputs);
+            _inputs = nn.InputVariable(new[] { _width, _height, 4 }, Nfeatures);
+            _labels = nn.InputVariable(new[] { _width * _height }, Nlabels);
+            _values = nn.InputVariable(new[] { 1 }, Nvalues);
+
+            var scaledInput = _inputs * 0.00000390625f;
             _model = CreateModel(scaledInput);
 
-            var lossPolice = CNTKLib.CrossEntropyWithSoftmax(new Variable(_model.Outputs[0]), Labels);
-            var lossValue = CNTKLib.CrossEntropyWithSoftmax(new Variable(_model.Outputs[1]), Values);
-            var loss = CNTKLib.Plus(lossPolice, lossValue);
-            var predPol = CNTKLib.ClassificationError(new Variable(_model.Outputs[0]), Labels);
-            var predVal = CNTKLib.ClassificationError(new Variable(_model.Outputs[1]), Values);
-            var pred = CNTKLib.Plus(predPol, predVal);
-            var optim = Optim.Adam(_model.Parameters());
-            _trainer = Trainer.CreateTrainer(_model, loss, pred, new List<Learner> {optim});
+            var lossPolice = nn.CrossEntropyLoss(_model.Outputs[0], _labels);
+            var lossValue = nn.MSELoss(_model.Outputs[1], _values);
+            var loss = lossPolice + lossValue;
+            var predPol = nn.ClassificationError(_model.Outputs[0], _labels);
+            var predVal = nn.ClassificationError(_model.Outputs[1], _values);
+            var pred = predPol + predVal;
+            _optim = Optim.Adam(_model.Parameters());
+            _trainer = Trainer.CreateTrainer(_model, loss, pred, new List<Learner> {_optim});
         }
 
         private static Function CreateModel(Variable input)
@@ -59,7 +67,7 @@ namespace ZeroTrain
                 nn.Linear(1),
                 nn.Tanh()
                 );
-            return Function.Combine(new List<Variable> { x.Output, y.Output });
+            return nn.Combine(x.Output, y.Output);
         }
 
         private Value ToValue(IEnumerable<double[,,]> stateBatch)
@@ -72,10 +80,8 @@ namespace ZeroTrain
         public override Tuple<IList<IList<double>>, IList<IList<double>>> policy_value(IEnumerable<double[,,]> stateBatch)
         {
             var state = ToValue(stateBatch);
-            var logActProbs = _model.Train(state);
-            var value = _model.Train(state);
-            var actProbs = logActProbs.exp();
-            return Tuple.Create(actProbs, value);
+            var result = _model.Evaluate(state);
+            return Tuple.Create(result[0].exp(), result[1]);
         }
 
         public override Tuple<IEnumerable<Tuple<int, double>>, double> policy_value_fn(Board board)
@@ -97,38 +103,43 @@ namespace ZeroTrain
 
         public override Tuple<double, double> train_step(IEnumerable<Tuple<double[,,], double[], double>> miniBatch, double lr)
         {
+            _optim.SetLearningRateSchedule(new TrainingParameterScheduleDouble(lr));
             const string fn = "zero_train.txt";
             CreateTrainingFile(fn, miniBatch);
             var loader = GetLoader(fn);
             Train(_trainer, loader);
             var loss = _trainer.PreviousMinibatchLossAverage();
             var eval = _trainer.PreviousMinibatchEvaluationAverage();
-            // K.set_value(self.model.optimizer.lr, lr)
             return Tuple.Create(loss, eval);
         }
 
-        private static void Train(Trainer trainer, MinibatchSource loader)
+        private void Train(Trainer trainer, MinibatchSource loader)
         {
             UnorderedMapStreamInformationMinibatchData minibatchData;
-            var image = loader.StreamInfo("features");
-            var label = loader.StreamInfo("labels");
-            var value = loader.StreamInfo("values");
+            var image = loader.StreamInfo(Nfeatures);
+            var label = loader.StreamInfo(Nlabels);
+            var value = loader.StreamInfo(Nvalues);
             do
             {
                 minibatchData = loader.GetNextMinibatch(32, nn.Device);
                 var arguments = new Dictionary<Variable, MinibatchData>
                 {
-                    {Inputs, minibatchData[image]},
-                    {Labels, minibatchData[label]},
-                    {Values, minibatchData[value]}
+                    {_inputs, minibatchData[image]},
+                    {_labels, minibatchData[label]},
+                    {_values, minibatchData[value]}
                 };
                 trainer.TrainMinibatch(arguments, nn.Device);
             } while (!minibatchData.Values.Any(a => a.sweepEnd));
         }
 
-        private static MinibatchSource GetLoader(string fileName)
+        private MinibatchSource GetLoader(string fileName)
         {
-            var conf = new[] { new StreamConfiguration("features", 15 * 15 * 4), new StreamConfiguration("labels", 15 * 15), new StreamConfiguration("values", 1) };
+            var conf = new[]
+            {
+                new StreamConfiguration(Nfeatures, _width*_height*4),
+                new StreamConfiguration(Nlabels, _width*_height),
+                new StreamConfiguration(Nvalues, 1)
+            };
 
             var minibatchSource = MinibatchSource.TextFormatMinibatchSource(
                 Path.Combine(BasePath, fileName), conf,
@@ -144,12 +155,12 @@ namespace ZeroTrain
             {
                 foreach (var data in miniBatch)
                 {
-                    fw.Write($"|values {data.Item3:0.0000} |labels ");
+                    fw.Write($"|{Nvalues} {data.Item3} |{Nlabels} ");
                     foreach (var label in data.Item2)
                     {
-                        fw.Write($"{label:0.0000} ");
+                        fw.Write($"{label} ");
                     }
-                    fw.Write("|features");
+                    fw.Write($"|{Nfeatures}");
                     foreach (var feature in data.Item1)
                     {
                         fw.Write($" {feature}");
